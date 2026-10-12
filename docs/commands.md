@@ -20,8 +20,8 @@ prints it.
 | `move-window-to-display <next\|prev> [--follow]` | Move the focused window to another display's workspace. |
 | `focus <left\|down\|up\|right> [--boundaries <b>] [--boundaries-action <a>]` | Focus the nearest window. `--boundaries` is `workspace` (default) or `all-monitors-outer-frame`, which continues onto the next display. `--boundaries-action` is `stop` (default), `fail`, `wrap-around-the-workspace` (`--wrap-around`) or `wrap-around-all-monitors`, which needs `all-monitors-outer-frame`. |
 | `focus-monitor <left\|down\|up\|right\|next\|prev\|n>` | Focus a display. |
-| `move <left\|down\|up\|right>` | Move the focused window in the tree. |
-| `join-with <left\|down\|up\|right>` | Put the focused window and its neighbour in a new container. |
+| `move <left\|down\|up\|right>` | Move the focused window in the tree. In app-grouped Columns, a move across columns carries its whole app group; within a column, only the focused window moves. |
+| `join-with <left\|down\|up\|right>` | Put the focused window and its neighbour in a new container. In app-grouped Columns, the full focused app group joins the neighboring column. |
 | `resize <smart\|width\|height> <+n\|-n>` | Resize by n points. |
 | `layout <tiles\|accordion\|horizontal\|vertical\|auto\|h_tiles\|v_tiles\|h_accordion\|v_accordion\|floating\|tiling\|scrolling\|columns>...` | Set the container's layout, float/tile the window, or switch the workspace to [scrolling](configuration.md#scrolling) or [columns](configuration.md#columns); a container layout switches it back. Given several, applies the one after the current one, so `layout floating tiling` toggles and `layout tiles accordion scrolling` cycles. Acts on the focused window, tiling it first if it floats, so it does nothing on an empty workspace. |
 | `fullscreen` | Toggle filling the workspace (not macOS full screen). |

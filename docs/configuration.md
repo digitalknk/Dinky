@@ -46,7 +46,7 @@ numbered workspace.
 | `columns`, `rows` | `1` | A fixed layout's template. |
 | `expand` | `'columns'` | What a fixed layout does when every cell is taken. |
 | `max-columns` | Display-resolved `[columns].max` | A columns layout's limit for automatic insertion. |
-| `group-by-app` | `[columns].group-by-app` | Keep new windows of the same app in one column. Only valid with a columns layout. |
+| `group-by-app` | `[columns].group-by-app` | Keep each app's tiled windows in one column within a workspace. Only valid with a columns layout. |
 
 </div>
 
@@ -90,10 +90,25 @@ numbering starts at 1.
 
 `layout = 'columns'` keeps a bounded row of full-height columns. New apps fill
 columns until `max` is reached. Further windows split a tile in the least-populated
-column instead of adding another narrow column. With `group-by-app = true`, a
-new window joins a column containing the same bundle ID, even before the limit
-is reached. Windows with no bundle ID do not form an app group. Floating windows
-are excluded.
+column instead of adding another narrow column. With `group-by-app = true`, Dinky
+keeps tiled windows with the same bundle ID in one column within each workspace.
+New windows join their app's column even before the limit is reached. Windows
+without a bundle ID do not form an app group. Floating and minimized windows are
+outside the layout.
+
+Grouping also applies when you move windows. A move or drag across columns carries
+the whole app group. If the target column has another app group, Dinky exchanges
+the two groups and leaves unrelated apps in mixed columns in place when possible.
+Moves and drops within one column affect only the selected window. `join-with`
+moves the whole focused app group into the neighboring column; a column may hold
+more than one app. When `group-by-app = false`, windows move independently.
+
+Groups are per workspace. Moving a window to another workspace still moves that
+window alone; on insertion, it joins a matching group in the destination
+workspace. When Dinky reconciles an existing columns tree without rebuilding
+it, a split app group is repaired in place: the focused window's column wins;
+otherwise, Dinky keeps the largest group, using tree order to break ties, and
+preserves other column sizes when possible.
 
 The first two windows in a column stack vertically. More windows split the
 largest available tile along its longer side: a third editor window can share
@@ -116,10 +131,12 @@ layout = 'columns'
 
 `max` and `max-columns` must be positive integers. Display overrides use the
 same pattern precedence as gaps; workspace overrides win over display settings.
-The limit guides automatic insertion and rebuilding after settings change.
-Manual tree commands remain available and may create more columns or mix apps
-within a column. Existing windows are rebuilt into columns when this layout or
-its settings change; their previous manual arrangement is not retained.
+The limit guides automatic insertion. Changing the limit or grouping setting
+rebuilds the columns from the current tree order; the previous manual layout is
+not retained.
+Manual tree commands may create more columns or join different apps in one
+column. With grouping enabled, those commands still keep each app group
+together.
 
 ## `[columns]`
 
@@ -128,7 +145,7 @@ its settings change; their previous manual arrangement is not retained.
 | Key | Default | |
 |---|---|---|
 | `max` | `3` | Maximum columns created by automatic insertion. |
-| `group-by-app` | `true` | Insert a new window into a column containing its app's bundle ID. |
+| `group-by-app` | `true` | Keep windows with the same bundle ID together within each workspace, including when they move between columns. Set to `false` to move windows independently. |
 
 </div>
 

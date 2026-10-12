@@ -49,6 +49,7 @@ extension Coordinator {
             $0.chosenAlgorithm = new == configured ? nil : new
             $0.setAlgorithm(new)
             $0.focus(id)
+            $0.enforceAppGroups()
         }
         flush()
     }

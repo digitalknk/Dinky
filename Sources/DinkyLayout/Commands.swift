@@ -30,7 +30,9 @@ extension Workspace {
     /// Swap two windows' places in the tree, keeping both tiles' sizes. Focus stays where it was.
     @discardableResult
     public mutating func swap(_ first: WindowID, _ second: WindowID) -> Bool {
-        guard first != second, let a = root.path(of: first), let b = root.path(of: second) else { return false }
+        let repaired = linksAppGroups && enforceAppGroups()
+        guard first != second, let a = root.path(of: first), let b = root.path(of: second) else { return repaired }
+        if linksAppGroups, a.first != b.first { return swapAppGroups(first, second) || repaired }
         root.modify(at: Array(a.dropLast())) { $0.replace(at: a.last!, with: .window(second)) }
         root.modify(at: Array(b.dropLast())) { $0.replace(at: b.last!, with: .window(first)) }
         if let focused { focus(focused) }
@@ -44,6 +46,11 @@ extension Workspace {
     @discardableResult
     public mutating func move(_ direction: Direction) -> Bool {
         isFullscreen = false
+        if linksAppGroups {
+            let repaired = enforceAppGroups()
+            let moved = moveAppGroup(direction)
+            return repaired || moved
+        }
         return isScrolling ? moveInStrip(direction) : moveInTree(direction)
     }
 
@@ -102,6 +109,11 @@ extension Workspace {
     @discardableResult
     public mutating func join(_ direction: Direction) -> Bool {
         isFullscreen = false
+        if linksAppGroups {
+            let repaired = enforceAppGroups()
+            let joined = joinAppGroup(direction) ?? joinInTree(direction)
+            return repaired || joined
+        }
         return isScrolling ? joinInStrip(direction) : joinInTree(direction)
     }
 

@@ -206,6 +206,7 @@ final class Coordinator {
             } else {
                 workspaces[key]!.setAlgorithm(chosen ?? algorithm(settings(for: key), for: key))
             }
+            workspaces[key]!.enforceAppGroups()
         }
     }
 
