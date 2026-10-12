@@ -10,7 +10,7 @@ extension Config {
 
     start-at-login = true
     workspaces = 5                  # across all displays, one native Space each
-    default-layout = 'tiles'        # tiles (dwindle) | dwindle | accordion | fixed | scrolling
+    default-layout = 'tiles'        # tiles (dwindle) | dwindle | accordion | fixed | scrolling | columns
     default-tiling = true           # false leaves workspaces untiled unless overridden
     follow-app-activation = true    # Cmd-Tab and Dock clicks switch Spaces the fast way
     float-windows-without-fullscreen = true   # progress windows, About, Calculator and the like float
@@ -24,6 +24,16 @@ extension Config {
     # columns = 2
     # rows = 3
     # expand = 'columns'           # columns | rows | accordion (overflow in last cell)
+
+    # Opt in to bounded columns on a workspace; other workspaces keep their layout.
+    # [columns]
+    # max = 3
+    # group-by-app = true
+    # [workspace.1]
+    # layout = 'columns'
+    # max-columns = 4            # optional workspace override
+    # [display.'built-in']
+    # max-columns = 2
 
     [accordion]
     padding = 30                    # points the neighbours peek out by

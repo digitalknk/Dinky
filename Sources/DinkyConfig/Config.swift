@@ -24,6 +24,7 @@ public struct Config: Equatable {
     public var floatWindowsWithoutFullscreen = true
     public var accordion = Accordion()
     public var scrolling = Scrolling()
+    public var columns = Columns()
     public var gaps = Gaps()
     /// `[display.<pattern>]` overrides, in file order.
     public var displays: [DisplayOverride] = []
@@ -109,6 +110,7 @@ public struct Config: Equatable {
         floatWindowsWithoutFullscreen = try t.bool("float-windows-without-fullscreen") ?? floatWindowsWithoutFullscreen
         accordion = try t.table("accordion").map(Accordion.init) ?? accordion
         scrolling = try t.table("scrolling").map(Scrolling.init) ?? scrolling
+        columns = try t.table("columns").map(Columns.init) ?? columns
         gaps = try t.table("gaps").map { try gaps.applying(GapsPatch($0)) } ?? gaps
         if let displayTable = try t.table("display") {
             for pattern in displayTable.keys {
@@ -132,7 +134,7 @@ public struct Config: Equatable {
 }
 
 public enum LayoutKind: String, CaseIterable {
-    case tiles, dwindle, accordion, fixed, scrolling
+    case tiles, dwindle, accordion, fixed, scrolling, columns
 }
 
 public enum ExpansionKind: String, CaseIterable {
@@ -146,6 +148,9 @@ public struct WorkspaceSettings: Equatable {
     public var rows = 1
     public var columns = 1
     public var expand = ExpansionKind.columns
+    /// Omitted values inherit the display-resolved column settings.
+    public var maxColumns: Int?
+    public var groupByApp: Bool?
 
     public init(tiling: Bool, layout: LayoutKind) {
         self.tiling = tiling
@@ -158,11 +163,17 @@ public struct WorkspaceSettings: Equatable {
         let columns: Int? = try t.int("columns")
         let rows: Int? = try t.int("rows")
         let expand: ExpansionKind? = try t.choice("expand")
+        maxColumns = try t.int("max-columns")
+        groupByApp = try t.bool("group-by-app")
+        if let maxColumns, maxColumns < 1 { throw ConfigError(path: t.path("max-columns"), "must be at least 1") }
         if let columns, columns < 1 { throw ConfigError(path: t.path("columns"), "must be at least 1") }
         if let rows, rows < 1 { throw ConfigError(path: t.path("rows"), "must be at least 1") }
         try t.done()
         if self.layout != .fixed, let key = columns != nil ? "columns" : rows != nil ? "rows" : expand != nil ? "expand" : nil {
             throw ConfigError(path: t.path(key), "only valid for a fixed layout")
+        }
+        if self.layout != .columns, let key = maxColumns != nil ? "max-columns" : groupByApp != nil ? "group-by-app" : nil {
+            throw ConfigError(path: t.path(key), "only valid for a columns layout")
         }
         self.rows = rows ?? self.rows
         self.columns = columns ?? self.columns
@@ -208,6 +219,21 @@ public struct Scrolling: Equatable {
     init(_ t: Table) throws {
         columnWidth = try t.double("column-width") ?? columnWidth
         guard (0.1...1).contains(columnWidth) else { throw ConfigError(path: t.path("column-width"), "must be 0.1 to 1") }
+        try t.done()
+    }
+}
+
+/// `[columns]`: a bounded row of columns with nested tiles inside each column.
+public struct Columns: Equatable {
+    public var max = 3
+    public var groupByApp = true
+
+    public init() {}
+
+    init(_ t: Table) throws {
+        max = try t.int("max") ?? max
+        guard max >= 1 else { throw ConfigError(path: t.path("max"), "must be at least 1") }
+        groupByApp = try t.bool("group-by-app") ?? groupByApp
         try t.done()
     }
 }

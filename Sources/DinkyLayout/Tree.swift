@@ -166,7 +166,7 @@ public struct Container: Equatable, Sendable {
     /// Collapse redundant structure bottom-up without changing geometry: drop empty containers,
     /// replace single-child containers with their child, splice children of same-orientation, same-mode containers.
     /// `auto` containers are not spliced: their axis depends on their own rectangle.
-    mutating func normalize() {
+    mutating func normalize(splicingChildren: Bool = true) {
         var newChildren: [Node] = [], newRatios: [Double] = [], newActive = 0
         for (i, child) in children.enumerated() {
             if i == activeIndex { newActive = newChildren.count }
@@ -178,7 +178,7 @@ public struct Container: Equatable, Sendable {
             switch node {
             case .container(let c) where c.children.isEmpty:
                 continue
-            case .container(let c) where c.orientation == orientation && orientation != .auto && c.mode == mode:
+            case .container(let c) where splicingChildren && c.orientation == orientation && orientation != .auto && c.mode == mode:
                 if i == activeIndex { newActive += c.activeIndex }
                 newChildren += c.children
                 newRatios += c.ratios.map { $0 * ratios[i] }

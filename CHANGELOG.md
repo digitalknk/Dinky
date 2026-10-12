@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New optional `columns` layout fills full-height columns up to `[columns] max`, then splits tiles in the least crowded column. Windows from the same app share a column by default. The column limit can be overridden per display or workspace, and `layout columns` selects it for the focused workspace.
+
 ## 0.18
 
 ### Key bindings

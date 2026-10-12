@@ -30,7 +30,10 @@ extension Coordinator {
     func takeOverTile(of id: WindowID, in key: UInt64) -> Bool {
         guard let newcomer = heldTabs.first(where: { $0.value == id })?.key else { return false }
         heldTabs[newcomer] = nil
-        edit(key) { $0.replace(id, with: newcomer) }
+        edit(key) {
+            $0.replace(id, with: newcomer)
+            $0.setApp(model.windows[newcomer]?.bundleID, for: newcomer)
+        }
         placements[newcomer]!.space = key
         return true
     }

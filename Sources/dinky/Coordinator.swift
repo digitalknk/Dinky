@@ -188,10 +188,24 @@ final class Coordinator {
     /// Resolve layout settings by a Space's current numbered position, which can change when Spaces are reordered.
     private func configureWorkspaces() {
         for key in workspaces.keys {
+            // Placement during a rebuild must use the destination display's current geometry.
+            if let display = displays.display(containingSpace: key) {
+                workspaces[key]!.bounds = display.visibleArea
+                workspaces[key]!.gaps = gaps(on: display)
+                workspaces[key]!.walls = walls(of: display)
+            }
             workspaces[key]!.accordionPadding = CGFloat(config.accordion.padding)
             workspaces[key]!.autoOrientAccordions = config.accordion.orientation == .auto
             workspaces[key]!.columnWidth = config.scrolling.columnWidth
-            workspaces[key]!.setAlgorithm(workspaces[key]!.chosenAlgorithm ?? algorithm(settings(for: key)))
+            for id in workspaces[key]!.windows {
+                workspaces[key]!.setApp(model.windows[id]?.bundleID, for: id)
+            }
+            let chosen = workspaces[key]!.chosenAlgorithm
+            if case .columns = chosen {
+                workspaces[key]!.setAlgorithm(columnsAlgorithm(for: key))
+            } else {
+                workspaces[key]!.setAlgorithm(chosen ?? algorithm(settings(for: key), for: key))
+            }
         }
     }
 
@@ -204,18 +218,19 @@ final class Coordinator {
         config.settings(forWorkspace: AppState.shared.numbers.number(of: space))
     }
 
-    func algorithm(_ settings: WorkspaceSettings) -> TilingAlgorithm {
-        let expand: FixedExpansion = switch settings.expand {
-        case .rows: .rows
-        case .columns: .columns
-        case .accordion: .accordion
-        }
-        return switch settings.layout {
-        case .tiles, .dwindle: .dwindle(.tiles)
-        case .accordion: .dwindle(.accordion)
-        case .fixed: .fixed(rows: settings.rows, columns: settings.columns, expand: expand)
-        case .scrolling: .scrolling
-        }
+    func algorithm(_ settings: WorkspaceSettings, for space: UInt64) -> TilingAlgorithm {
+        settings.tilingAlgorithm(columns: columnSettings(for: space))
+    }
+
+    private func columnSettings(for space: UInt64) -> DinkyConfig.Columns {
+        guard let display = displays.display(containingSpace: space) else { return config.columns }
+        return config.columns(for: displays.monitor(display))
+    }
+
+    func columnsAlgorithm(for space: UInt64) -> TilingAlgorithm {
+        let settings = settings(for: space), columns = columnSettings(for: space)
+        return .columns(max: settings.maxColumns ?? columns.max,
+                        groupByApp: settings.groupByApp ?? columns.groupByApp)
     }
 
     /// Classifies a window the first time it is on screen, then keeps it in the tree of its current Space
@@ -241,7 +256,7 @@ final class Coordinator {
         if let old { edit(old) { $0.remove(window.id) } }
         // A window coming from another Space's tree is moving, not switching tabs: tabs share a Space.
         if let new, old == nil, holdAsTab(window, in: new) { return }
-        if let new { edit(new) { $0.insert(window.id) } }
+        if let new { edit(new) { $0.insert(window.id, app: window.bundleID) } }
         placements[window.id]!.space = new
     }
 
@@ -297,7 +312,7 @@ final class Coordinator {
             workspaces[key] = Workspace(bounds: display.visibleArea, gaps: gaps(on: display),
                                         accordionPadding: CGFloat(config.accordion.padding),
                                         autoOrientAccordions: config.accordion.orientation == .auto,
-                                        algorithm: algorithm(settings))
+                                        algorithm: algorithm(settings, for: key))
             workspaces[key]!.columnWidth = config.scrolling.columnWidth
             workspaces[key]!.walls = walls(of: display)
         }

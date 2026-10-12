@@ -30,8 +30,44 @@ extension Coordinator {
     /// (tiles when that is scrolling too). The choice holds until switched again.
     func setScrolling(_ on: Bool, for id: WindowID) {
         guard let key = placements[id]?.space else { return }
-        let configured = algorithm(settings(for: key))
+        let configured = algorithm(settings(for: key), for: key)
         let new: TilingAlgorithm = on ? .scrolling : configured == .scrolling ? .dwindle(.tiles) : configured
+        edit(key) {
+            $0.chosenAlgorithm = new == configured ? nil : new
+            $0.setAlgorithm(new)
+            $0.focus(id)
+        }
+        flush()
+    }
+
+    /// Switch to app-grouped columns using the current display and workspace settings.
+    func setColumns(for id: WindowID) {
+        guard let key = placements[id]?.space else { return }
+        let configured = algorithm(settings(for: key), for: key)
+        let new = columnsAlgorithm(for: key)
+        edit(key) {
+            $0.chosenAlgorithm = new == configured ? nil : new
+            $0.setAlgorithm(new)
+            $0.focus(id)
+        }
+        flush()
+    }
+
+    func isColumns(_ id: WindowID) -> Bool {
+        guard let key = placements[id]?.space, let workspace = workspaces[key] else { return false }
+        if case .columns = workspace.algorithm { return true }
+        return false
+    }
+
+    /// A container layout leaves a workspace-wide scrolling or columns override.
+    func setTree(for id: WindowID) {
+        guard let key = placements[id]?.space else { return }
+        let configured = algorithm(settings(for: key), for: key)
+        let new: TilingAlgorithm
+        switch configured {
+        case .scrolling, .columns: new = .dwindle(.tiles)
+        default: new = configured
+        }
         edit(key) {
             $0.chosenAlgorithm = new == configured ? nil : new
             $0.setAlgorithm(new)

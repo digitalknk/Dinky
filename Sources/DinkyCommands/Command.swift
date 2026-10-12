@@ -75,11 +75,11 @@ public enum ResizeDimension: String, Equatable, Sendable {
 }
 
 /// A state for `layout`, as in AeroSpace: a mode, an orientation, both, or floating or tiling for the window;
-/// or scrolling for its workspace.
+/// or scrolling or columns for its workspace.
 public enum LayoutName: String, Equatable, Sendable {
     case tiles, accordion, horizontal, vertical, auto
     case hTiles = "h_tiles", vTiles = "v_tiles", hAccordion = "h_accordion", vAccordion = "v_accordion"
-    case floating, tiling, scrolling
+    case floating, tiling, scrolling, columns
 
     /// The one of `names` to apply to a window `current` describes: the one after the last that describes it,
     /// wrapping, so a list cycles and two toggle; the first when none does.

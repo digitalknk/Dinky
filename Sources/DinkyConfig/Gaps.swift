@@ -1,4 +1,4 @@
-// Gaps in points, the `[display.<pattern>]` tables that override them for one display, and the display
+// Gaps in points, the `[display.<pattern>]` tables that override gaps and column limits, and the display
 // patterns those tables and `[workspace-to-display]` use.
 
 /// The gap between side-by-side windows (`horizontal`) and between stacked ones (`vertical`).
@@ -112,11 +112,14 @@ public enum MonitorPattern: Equatable {
 public struct DisplayOverride: Equatable {
     public var pattern: MonitorPattern
     public var gaps = GapsPatch()
+    public var maxColumns: Int?
 
     init(_ pattern: String, _ t: Table) throws {
         guard !pattern.isEmpty else { throw ConfigError(path: t.path, "a display pattern can't be empty") }
         self.pattern = MonitorPattern(pattern)
         gaps = try t.table("gaps").map(GapsPatch.init) ?? gaps
+        maxColumns = try t.int("max-columns")
+        if let maxColumns, maxColumns < 1 { throw ConfigError(path: t.path("max-columns"), "must be at least 1") }
         if try t.int("workspaces") != nil {
             throw ConfigError(path: t.path("workspaces"),
                               "workspaces are numbered across displays now; put one on a display with [workspace-to-display]")
@@ -133,6 +136,15 @@ extension Config {
             if case .name(let text) = override.pattern { return text.count } else { return -1 }
         }
         return displays.filter { $0.pattern.matches(monitor) }.sorted { rank($0) < rank($1) }
+    }
+
+    /// The column settings on `monitor`, with the same pattern precedence as gaps.
+    public func columns(for monitor: Monitor) -> Columns {
+        overrides(for: monitor).reduce(columns) { settings, override in
+            var settings = settings
+            settings.max = override.maxColumns ?? settings.max
+            return settings
+        }
     }
 
     /// The gaps on `monitor`: the general ones, with the overrides of every matching display table applied.

@@ -25,7 +25,7 @@ permalink: /configuration/
 |---|---|---|
 | `start-at-login` | `true` | Register as a login item. |
 | `workspaces` | `5` | Workspaces across all displays, one native Space each. dinky creates and removes Spaces to match. |
-| `default-layout` | `'tiles'` | `'tiles'` (the existing dwindle layout), `'dwindle'`, `'accordion'`, `'fixed'`, or `'scrolling'`. |
+| `default-layout` | `'tiles'` | `'tiles'` (the existing dwindle layout), `'dwindle'`, `'accordion'`, `'fixed'`, `'scrolling'`, or `'columns'`. |
 | `default-tiling` | `true` | Set `false` to leave workspaces untiled unless overridden. |
 | `follow-app-activation` | `true` | Cmd-Tab and Dock clicks switch Spaces the fast way. Needs the macOS "switch to a Space with open windows" setting off. |
 | `float-windows-without-fullscreen` | `true` | Float windows that can't go full screen, such as Finder's copy progress, About This Mac and Calculator. Terminals and editors that can hide their title bar still tile. A `layout tiling` rule tiles a window anyway. |
@@ -45,6 +45,8 @@ numbered workspace.
 | `layout` | `default-layout` | Its layout, with the same values. |
 | `columns`, `rows` | `1` | A fixed layout's template. |
 | `expand` | `'columns'` | What a fixed layout does when every cell is taken. |
+| `max-columns` | Display-resolved `[columns].max` | A columns layout's limit for automatic insertion. |
+| `group-by-app` | `[columns].group-by-app` | Keep new windows of the same app in one column. Only valid with a columns layout. |
 
 </div>
 
@@ -83,6 +85,52 @@ other they are a config error. `layout = 'accordion'`
 remains available; conceptually it resembles a 1×1 fixed template with accordion
 overflow, but keeps the existing accordion orientation behavior. Workspace
 numbering starts at 1.
+
+## Columns
+
+`layout = 'columns'` keeps a bounded row of full-height columns. New apps fill
+columns until `max` is reached. Further windows split a tile in the least-populated
+column instead of adding another narrow column. With `group-by-app = true`, a
+new window joins a column containing the same bundle ID, even before the limit
+is reached. Windows with no bundle ID do not form an app group. Floating windows
+are excluded.
+
+The first two windows in a column stack vertically. More windows split the
+largest available tile along its longer side: a third editor window can share
+the lower half side by side while the first keeps the upper half. No empty
+columns are reserved, so one window uses the entire workspace.
+
+```toml
+[columns]
+max = 4
+group-by-app = true
+
+[display.'built-in']
+max-columns = 2
+
+[workspace.1]
+layout = 'columns'
+# max-columns = 3       # optional, overrides the display's limit
+# group-by-app = false  # optional, overrides the global grouping setting
+```
+
+`max` and `max-columns` must be positive integers. Display overrides use the
+same pattern precedence as gaps; workspace overrides win over display settings.
+The limit guides automatic insertion and rebuilding after settings change.
+Manual tree commands remain available and may create more columns or mix apps
+within a column. Existing windows are rebuilt into columns when this layout or
+its settings change; their previous manual arrangement is not retained.
+
+## `[columns]`
+
+<div class="wide-table" markdown="1">
+
+| Key | Default | |
+|---|---|---|
+| `max` | `3` | Maximum columns created by automatic insertion. |
+| `group-by-app` | `true` | Insert a new window into a column containing its app's bundle ID. |
+
+</div>
 
 ## Scrolling
 
@@ -173,7 +221,7 @@ own workspace once the displays settle.
 
 ## `[display.<pattern>]`
 
-Per-display `gaps`, with the patterns above. Name patterns beat
+Per-display `gaps` and `max-columns`, with the patterns above. Name patterns beat
 `main`/`secondary`; longer names beat shorter.
 
 ```toml
@@ -331,7 +379,7 @@ The default `alt-` bindings take over Option-letter characters; set
 
 start-at-login = true
 workspaces = 5                  # across all displays, one native Space each
-default-layout = 'tiles'        # tiles (dwindle) | dwindle | accordion | fixed | scrolling
+default-layout = 'tiles'        # tiles (dwindle) | dwindle | accordion | fixed | scrolling | columns
 default-tiling = true           # false leaves workspaces untiled unless overridden
 follow-app-activation = true    # Cmd-Tab and Dock clicks switch Spaces the fast way
 float-windows-without-fullscreen = true   # progress windows, About, Calculator and the like float
@@ -345,6 +393,16 @@ float-windows-without-fullscreen = true   # progress windows, About, Calculator 
 # columns = 2
 # rows = 3
 # expand = 'columns'           # columns | rows | accordion (overflow in last cell)
+
+# Opt in to bounded columns on a workspace; other workspaces keep their layout.
+# [columns]
+# max = 3
+# group-by-app = true
+# [workspace.1]
+# layout = 'columns'
+# max-columns = 4            # optional workspace override
+# [display.'built-in']
+# max-columns = 2
 
 [accordion]
 padding = 30                    # points the neighbours peek out by

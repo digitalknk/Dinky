@@ -201,8 +201,8 @@ enum Dispatcher {
     }
 
     /// Applies the layout after the last that describes the window now (see `LayoutName.next`): floating or tiling
-    /// for the window, scrolling for its workspace, a mode, an orientation or both for its container, which takes a
-    /// scrolling workspace back to its tree. Anything but floating tiles a floating window first.
+    /// for the window, scrolling or columns for its workspace, or a mode and orientation for its container,
+    /// which takes a scrolling or columns workspace back to its tree. Anything but floating tiles a floating window first.
     private static func layout(_ names: [LayoutName], window: WindowID?) -> Reply {
         guard let coordinator = AppState.shared.coordinator else { return .error("tiling is not running") }
         let id = window ?? coordinator.focusedWindow
@@ -210,6 +210,8 @@ enum Dispatcher {
         var current: [LayoutName] = floating ? [.floating] : [.tiling]
         if !floating, coordinator.isScrolling(id) {
             current.append(.scrolling)
+        } else if !floating, coordinator.isColumns(id) {
+            current.append(.columns)
         } else if !floating, let container = coordinator.container(of: id), let axis = coordinator.containerAxis(of: id) {
             current += LayoutName.describing(container.mode, axis: axis, auto: container.orientation == .auto)
         }
@@ -220,9 +222,12 @@ enum Dispatcher {
         case .scrolling:
             if floating { coordinator.setFloating(id, false) }
             coordinator.setScrolling(true, for: id)
+        case .columns:
+            if floating { coordinator.setFloating(id, false) }
+            coordinator.setColumns(for: id)
         default:
             if floating { coordinator.setFloating(id, false) }
-            if coordinator.isScrolling(id) { coordinator.setScrolling(false, for: id) }
+            if coordinator.isScrolling(id) || coordinator.isColumns(id) { coordinator.setTree(for: id) }
             coordinator.command(on: id) { $0.setLayout(name.mode, name.orientation) }
         }
         return .ok("layout \(name.rawValue)")

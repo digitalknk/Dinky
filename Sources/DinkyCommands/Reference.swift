@@ -37,10 +37,10 @@ extension Command {
             description: "Put the focused window and its neighbour in a new container."),
         Doc(syntax: "resize <smart|width|height> <+N|-N>",
             description: "Grow or shrink the focused window by N points: smart along its container, width or height along that axis."),
-        Doc(syntax: "layout <tiles|accordion|horizontal|vertical|auto|h_tiles|v_tiles|h_accordion|v_accordion|floating|tiling|scrolling>...",
-            description: "Set the layout of the focused window's container, float or tile the window, or switch its workspace to scrolling. "
+        Doc(syntax: "layout <tiles|accordion|horizontal|vertical|auto|h_tiles|v_tiles|h_accordion|v_accordion|floating|tiling|scrolling|columns>...",
+            description: "Set the layout of the focused window's container, float or tile the window, or switch its workspace to scrolling or app-grouped columns. "
                 + "tiles and accordion set the mode, horizontal, vertical and auto (follow the container's longer side) "
-                + "the orientation, h_accordion and the like both; any of these takes a scrolling workspace back to its tree. "
+                + "the orientation, h_accordion and the like both; any of these takes a scrolling or columns workspace back to its tree. "
                 + "With several, apply the one after the last that describes the window now, so 'layout floating tiling' "
                 + "toggles and 'layout tiles accordion scrolling' cycles. "
                 + "An auto container counts as the orientation it follows now."),

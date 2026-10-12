@@ -30,7 +30,7 @@
     },
     "default-layout": {
       "type": "string",
-      "enum": ["tiles", "dwindle", "accordion", "fixed", "scrolling"],
+      "enum": ["tiles", "dwindle", "accordion", "fixed", "scrolling", "columns"],
       "default": "tiles",
       "description": "Workspace layout. tiles is the original name for dwindle."
     },
@@ -44,13 +44,23 @@
         "additionalProperties": false,
         "properties": {
           "tiling": { "type": "boolean" },
-          "layout": { "type": "string", "enum": ["tiles", "dwindle", "accordion", "fixed", "scrolling"] },
+          "max-columns": { "type": "integer", "minimum": 1, "description": "Automatic column limit, inheriting the display setting. Only valid for a columns layout." },
+          "group-by-app": { "type": "boolean", "description": "Group new windows by bundle ID, inheriting columns.group-by-app. Only valid for a columns layout." },
+          "layout": { "type": "string", "enum": ["tiles", "dwindle", "accordion", "fixed", "scrolling", "columns"] },
           "columns": { "type": "integer", "minimum": 1, "default": 1, "description": "Reserved columns for a fixed layout." },
           "rows": { "type": "integer", "minimum": 1, "default": 1, "description": "Reserved rows for a fixed layout." },
           "expand": { "type": "string", "enum": ["columns", "rows", "accordion"], "default": "columns", "description": "Where overflow windows go when every fixed cell is full." }
         },
-        "if": { "required": ["layout"], "properties": { "layout": { "enum": ["tiles", "dwindle", "accordion", "scrolling"] } } },
-        "then": { "not": { "anyOf": [ { "required": ["columns"] }, { "required": ["rows"] }, { "required": ["expand"] } ] } }
+        "allOf": [
+          {
+            "if": { "required": ["layout"], "properties": { "layout": { "enum": ["tiles", "dwindle", "accordion", "scrolling", "columns"] } } },
+            "then": { "not": { "anyOf": [ { "required": ["columns"] }, { "required": ["rows"] }, { "required": ["expand"] } ] } }
+          },
+          {
+            "if": { "required": ["layout"], "properties": { "layout": { "enum": ["tiles", "dwindle", "accordion", "scrolling", "fixed"] } } },
+            "then": { "not": { "anyOf": [ { "required": ["max-columns"] }, { "required": ["group-by-app"] } ] } }
+          }
+        ]
       }
     },
     "follow-app-activation": {
@@ -62,6 +72,15 @@
       "type": "boolean",
       "default": true,
       "description": "Float windows that can't go full screen, such as Finder's copy progress, About This Mac and Calculator. A `layout tiling` rule tiles one anyway."
+    },
+    "columns": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Bounded columns with nested tiles inside each column.",
+      "properties": {
+        "max": { "type": "integer", "minimum": 1, "default": 3, "description": "Maximum columns created by automatic insertion." },
+        "group-by-app": { "type": "boolean", "default": true, "description": "Insert new windows into a column containing their app's bundle ID." }
+      }
     },
     "scrolling": {
       "type": "object",
@@ -104,7 +123,8 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "gaps": { "$ref": "#/definitions/gaps" }
+          "gaps": { "$ref": "#/definitions/gaps" },
+          "max-columns": { "type": "integer", "minimum": 1, "description": "Override columns.max for matching displays." }
         }
       }
     },

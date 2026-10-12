@@ -6,6 +6,8 @@ public enum TilingAlgorithm: Equatable, Sendable {
     case fixed(rows: Int, columns: Int, expand: FixedExpansion)
     /// A strip of columns wider than the screen, scrolled to the focused one. See Scrolling.swift.
     case scrolling
+    /// Equal-width columns that fill before splitting tiles, optionally grouping windows by app.
+    case columns(max: Int, groupByApp: Bool)
 }
 
 public enum FixedExpansion: Equatable, Sendable {
@@ -41,6 +43,8 @@ public struct Workspace: Equatable, Sendable {
     var scrollOffset: CGFloat = 0
     /// Scrolling: the edges of `bounds` with another display beyond them, where a window cannot hang over.
     public var walls: Set<Direction> = []
+    /// App identity for automatic grouping, separate from the editable geometry tree.
+    var apps: [WindowID: String] = [:]
     /// The algorithm a `layout` command switched to, kept over the config's. Nil follows the config.
     public var chosenAlgorithm: TilingAlgorithm?
 
@@ -59,6 +63,9 @@ public struct Workspace: Equatable, Sendable {
         case .fixed(let rows, let columns, _):
             precondition(rows > 0 && columns > 0)
             root = Self.fixedRoot(rows: rows, columns: columns)
+        case .columns(let max, _):
+            precondition(max > 0)
+            root = Container(.horizontal)
         case .scrolling:
             root = Container(.horizontal)
         }
@@ -72,8 +79,12 @@ public struct Workspace: Equatable, Sendable {
 
     /// Insert a window and focus it. Fixed workspaces fill empty cells before expanding. If a tree command
     /// has changed the template structure, use the focused-leaf split instead of discarding the edits.
-    public mutating func insert(_ id: WindowID) {
+    public mutating func insert(_ id: WindowID, app: String? = nil) {
+        if let app { setApp(app, for: id) }
         guard !contains(id) else { return }
+        if case .columns(let max, let groupByApp) = algorithm, insertIntoColumns(id, max: max, groupByApp: groupByApp) {
+            return focus(id)
+        }
         if case .fixed(let rows, let columns, _) = algorithm, windows.isEmpty, !isFixedTree {
             root = Self.fixedRoot(rows: rows, columns: columns)
         }
@@ -106,6 +117,7 @@ public struct Workspace: Equatable, Sendable {
     /// Remove a window. Its share goes to its siblings, redundant containers collapse.
     /// If it was focused, focus moves to the window that took its place.
     public mutating func remove(_ id: WindowID) {
+        apps[id] = nil
         guard let path = root.path(of: id) else { return }
         if case .fixed = algorithm, isFixedTree {
             removeFixedWindow(at: path)
@@ -231,17 +243,31 @@ public struct Workspace: Equatable, Sendable {
     /// Lay the windows out afresh in the configured layout, keeping their order and focus.
     private mutating func rebuild() {
         let ids = isFixedTree ? fixedWindows : windows
+        let previousFocus = focused
         switch algorithm {
         case .dwindle(let mode):
             root = Container(mode == .accordion && autoOrientAccordions ? .auto : .horizontal, mode, ids.map(Node.window))
         case .fixed(let rows, let columns, let expand):
             root = Self.fixedRoot(rows: rows, columns: columns)
             for id in ids { _ = insertIntoFixed(id, expand: expand) }
+        case .columns(let max, let groupByApp):
+            precondition(max > 0)
+            root = Container(.horizontal)
+            focused = nil
+            for id in ids {
+                _ = insertIntoColumns(id, max: max, groupByApp: groupByApp)
+                focus(id)
+            }
         case .scrolling:
             root = Container(.horizontal, .tiles, ids.map(Node.window))
             for id in ids { columnWidths[id] = columnWidths[id] ?? columnWidth }
         }
-        if let focused { focus(focused) }
+        if let previousFocus { focus(previousFocus) }
+    }
+
+    /// Set app identity before inserting or rebuilding a workspace. Unknown apps do not form a group.
+    public mutating func setApp(_ app: String?, for id: WindowID) {
+        apps[id] = app.flatMap { $0.isEmpty ? nil : $0 }
     }
 
     /// Put `new` in `old`'s place, keeping its size, focus and fullscreen: another tab of the same native tab group
@@ -250,6 +276,7 @@ public struct Workspace: Equatable, Sendable {
         guard let path = root.path(of: old), !contains(new) else { return }
         root.modify(at: Array(path.dropLast())) { $0.replace(at: path.last!, with: .window(new)) }
         if focused == old { focused = new }
+        apps[new] = apps.removeValue(forKey: old)
         minimumSizes[old] = nil
         columnWidths[new] = columnWidths.removeValue(forKey: old)
     }
@@ -407,8 +434,10 @@ public struct Workspace: Equatable, Sendable {
 
     /// Tidy the tree after an edit, and unwrap a root whose only child is a container.
     mutating func normalize() {
-        root.normalize()
+        let keepsColumns: Bool
+        if case .columns = algorithm { keepsColumns = true } else { keepsColumns = false }
+        root.normalize(splicingChildren: !keepsColumns)
         // The strip stays the root even with one column left.
-        if !isScrolling, root.children.count == 1, case .container(let only) = root.children[0] { root = only }
+        if !isScrolling, !keepsColumns, root.children.count == 1, case .container(let only) = root.children[0] { root = only }
     }
 }

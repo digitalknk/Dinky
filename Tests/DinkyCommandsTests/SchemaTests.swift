@@ -64,6 +64,16 @@ struct SchemaTests {
         rows = 2
         expand = 'rows'
 
+        [workspace.3]
+        tiling = true
+        layout = 'columns'
+        max-columns = 3
+        group-by-app = false
+
+        [columns]
+        max = 4
+        group-by-app = true
+
         [accordion]
         padding = 20
         orientation = 'keep'
@@ -80,6 +90,7 @@ struct SchemaTests {
         outer.right = 4
 
         [display.main]
+        max-columns = 3
         gaps.inner = 2
         gaps.outer.top = 30
         gaps.outer.bottom = 0
@@ -87,6 +98,7 @@ struct SchemaTests {
         gaps.outer.right = 0
 
         [display.secondary]
+        max-columns = 2
         gaps.inner.horizontal = 1
         gaps.inner.vertical = 1
         gaps.outer = 8
@@ -171,20 +183,41 @@ struct SchemaTests {
         }
     }
 
-    /// Every key in the schema is in `table`, at the same path, and every open-ended table has an entry.
+    /// Every schema key appears in the fixtures. Open-ended entries are checked together because
+    /// different layouts have mutually exclusive options, such as fixed rows and grouped columns.
     private func covers(_ table: TOMLTable, _ schema: [String: Any], at path: String) {
+        covers([table], schema, at: path)
+    }
+
+    private func covers(_ tables: [TOMLTable], _ schema: [String: Any], at path: String) {
         let schema = object(schema)
         for (key, child) in schema["properties"] as? [String: [String: Any]] ?? [:] {
             let here = path.isEmpty ? key : "\(path).\(key)"
-            guard table.contains(key: key) else {
+            guard tables.contains(where: { $0.contains(key: key) }) else {
                 Issue.record("\(here) is in the schema but not the fixture")
                 continue
             }
-            each(table, key, child, at: here, covers)
+            var nested: [TOMLTable] = [], nestedSchema = child
+            for table in tables where table.contains(key: key) {
+                each(table, key, child, at: here) { value, definition, _ in
+                    nested.append(value)
+                    nestedSchema = definition
+                }
+            }
+            if !nested.isEmpty { covers(nested, nestedSchema, at: here) }
         }
         if let child = schema["additionalProperties"] as? [String: Any] {
-            #expect(!table.keys.isEmpty, "\(path) has no entries in the fixture")
-            for key in table.keys { each(table, key, child, at: "\(path).\(key)", covers) }
+            var entries: [TOMLTable] = [], entrySchema = child
+            for table in tables {
+                for key in table.keys {
+                    each(table, key, child, at: "\(path).\(key)") { value, definition, _ in
+                        entries.append(value)
+                        entrySchema = definition
+                    }
+                }
+            }
+            #expect(tables.contains(where: { !$0.keys.isEmpty }), "\(path) has no entries in the fixture")
+            if !entries.isEmpty { covers(entries, entrySchema, at: path) }
         }
     }
 

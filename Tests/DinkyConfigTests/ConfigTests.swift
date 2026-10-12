@@ -61,7 +61,7 @@ struct ConfigTests {
         #expect(!config.followAppActivation)
         #expect(!config.floatWindowsWithoutFullscreen)
         assertError("workspaces = 0\n", path: "workspaces", line: 1, contains: "at least 1")
-        assertError("default-layout = 'stack'\n", path: "default-layout", line: 1, contains: "'tiles', 'dwindle', 'accordion', 'fixed', 'scrolling'")
+        assertError("default-layout = 'stack'\n", path: "default-layout", line: 1, contains: "'tiles', 'dwindle', 'accordion', 'fixed', 'scrolling', 'columns'")
     }
 
     @Test func `Workspace layouts`() throws {
