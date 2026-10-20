@@ -84,6 +84,8 @@ extension Command {
             return none ? .swapWithMaster : nil
         case "retile":
             return none ? .retile : nil
+        case "sticky":
+            return none ? .sticky : nil
         case "clear-minimum-sizes":
             return none ? .clearMinimumSizes : nil
         case "mode":

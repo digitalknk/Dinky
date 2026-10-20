@@ -75,6 +75,8 @@ enum Dispatcher {
             guard let coordinator = AppState.shared.coordinator else { return .error("tiling is not running") }
             coordinator.reconcile()
             return .ok("retiled")
+        case .sticky:
+            return sticky(window ?? focusedWindowID())
         case .clearMinimumSizes:
             guard let coordinator = AppState.shared.coordinator else { return .error("tiling is not running") }
             coordinator.clearMinimumSizes()
@@ -304,5 +306,11 @@ enum Dispatcher {
         }
         return nil
     }
-}
 
+    private static func sticky(_ id: WindowID) -> Reply {
+        let info = CGWindowListCopyWindowInfo(.optionIncludingWindow, id) as? [[String: Any]]
+        guard id != 0, let pid = info?.first?[kCGWindowOwnerPID as String] as? pid_t else { return .error("no focused window") }
+        guard dinky_process_assign_to_all_spaces(pid) else { return .error("could not assign the app to all Spaces") }
+        return .ok("app \(pid) on every Space")
+    }
+}

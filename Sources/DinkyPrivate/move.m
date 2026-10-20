@@ -50,3 +50,18 @@ bool dinky_move_windows_to_space(const uint32_t *windowIDs, int count, uint64_t 
     perform((__bridge void *)operation);
     return true;
 }
+
+@protocol DinkyBridgedProcessOperation <NSObject>
+- (instancetype)initWithProcess:(int)process;
+@end
+
+bool dinky_process_assign_to_all_spaces(int process)
+{
+    SLSPerformAsynchronousBridgedWindowManagementOperationFn perform = dinky_dispatcher();
+    Class cls = objc_getClass("SLSBridgedProcessAssignToAllSpacesOperation");
+    if (!perform || !cls) return false;
+    id operation = [(id<DinkyBridgedProcessOperation>)[cls alloc] initWithProcess:process];
+    if (!operation) return false;
+    perform((__bridge void *)operation);
+    return true;
+}

@@ -61,6 +61,8 @@ extension Command {
                 + "Both keep their tiles and the focus stays with the window."),
         Doc(syntax: "retile",
             description: "Re-read every window and re-apply the layout of every workspace on screen."),
+        Doc(syntax: "sticky",
+            description: "Show the focused window's app on every Space until it quits. In a rule, the new window's app."),
         Doc(syntax: "clear-minimum-sizes",
             description: "Forget the minimum window sizes dinky has learned for every app, and re-apply every layout."),
         Doc(syntax: "mode <name>",

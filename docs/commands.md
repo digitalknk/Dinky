@@ -30,6 +30,7 @@ prints it.
 | `balance-sizes` | Give every window an equal share. |
 | `swap-with-master` | In a [master layout](configuration.md#master), swap the focused window with the master, or the master with the top of the stack. |
 | `retile` | Re-read windows and re-apply every layout. |
+| `sticky` | Show the window's app on every Space until it quits, like the Dock's "Assign To: All Desktops". Use it in a rule. |
 | `clear-minimum-sizes` | Forget the minimum window sizes learned for every app and re-apply every layout. |
 | `mode <name>` | Switch binding mode. |
 | `reload-config` | Reload the config. |

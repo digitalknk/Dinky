@@ -112,6 +112,7 @@ struct ParseTests {
         #expect(try parse("enable off") == .enable(.off))
         #expect(try parse("enable toggle") == .enable(.toggle))
         #expect(try parse("retile") == .retile)
+        #expect(try parse("sticky") == .sticky)
         #expect(try parse("clear-minimum-sizes") == .clearMinimumSizes)
         #expect(try parse("exec-and-forget sketchybar --trigger 'a b'") == .execAndForget("sketchybar --trigger 'a b'"))
         #expect(try parse("  exec-and-forget   echo  hi") == .execAndForget("echo  hi"))
@@ -140,7 +141,7 @@ struct ParseTests {
     private static let knownGood = [
         "workspace 1", "workspace-back-and-forth", "move-window-to-workspace 2 --follow", "move-window-to-display next",
         "focus left", "focus-monitor next", "move left", "join-with left", "resize smart +10", "layout tiles", "workspace-layout master",
-        "fullscreen", "flatten-workspace-tree", "balance-sizes", "swap-with-master", "retile", "clear-minimum-sizes", "mode main", "reload-config", "enable on",
+        "fullscreen", "flatten-workspace-tree", "balance-sizes", "swap-with-master", "retile", "sticky", "clear-minimum-sizes", "mode main", "reload-config", "enable on",
         "list-workspaces", "list-windows", "list-monitors", "list-displays", "list-modes", "debug-state", "exec-and-forget true",
     ]
 

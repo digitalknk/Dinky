@@ -27,6 +27,8 @@ public enum Command: Equatable, Sendable {
     /// Swap the focused window with the master of a master workspace, or the master with the top of the stack.
     case swapWithMaster
     case retile
+    /// Show the window's app on every Space, like the Dock's "Assign To: All Desktops", until it quits.
+    case sticky
     case clearMinimumSizes
     case mode(String)
     case reloadConfig
