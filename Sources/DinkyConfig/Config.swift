@@ -41,9 +41,9 @@ public struct Config: Equatable {
 
     public init() {}
 
-    /// `~/.config/dinky/dinky.toml`
+    /// `~/.config/jinky/jinky.toml`
     public static var userConfigURL: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/dinky/dinky.toml")
+        FileManager.default.homeDirectoryForCurrentUser.appending(path: ".config/jinky/jinky.toml")
     }
 
     /// The config shipped with dinky, used when the user has none.
